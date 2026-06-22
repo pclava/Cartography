@@ -1,5 +1,8 @@
 import numpy as np
+import csv
+import cartopy.crs as ccrs
 from shapely.geometry import Polygon, mapping
+import shapely
 import json
 import argparse
 import matplotlib.pyplot as plt
@@ -60,35 +63,49 @@ def latitude(x):
     if x < -90 or x > 90: raise argparse.ArgumentTypeError(f"Invalid latitude {x}")
     return np.radians(x)
 
-def plot_points(center, points):
-    center_vector = vector(center[np.newaxis, :])
-    x,y,z = points 
-    xr = np.ptp(x)
-    yr = np.ptp(y)
-    zr = np.ptp(z)
-    fig = plt.figure()
-    ax = fig.add_subplot(projection='3d')
-    ax.set_box_aspect((xr, yr, zr))
-    sc = ax.scatter(x, y, z)
-    ax.scatter(center_vector[:, 0], center_vector[:, 1], center_vector[:, 2])
+def plot(points):
+    ortho_proj = ccrs.Orthographic(central_longitude=0, central_latitude=0)
+    fig = plt.figure(figsize=(8, 8))
+    ax = fig.add_subplot(1, 1, 1, projection=ortho_proj)
+    ax.coastlines()
+    ax.set_global()
+    lons, lats = np.degrees(points)
+    ax.scatter(lons, lats, color='red', marker='o', s=100,
+           transform=ccrs.PlateCarree(), zorder=5)
     plt.show()
 
+def clip_to_visible(points, pov, resolution=360):
+    # Note: visible is simply the equator from the pov
+    center = np.array([pov[0], pov[1]])
+    rotated = create_great_circle(center, resolution=resolution)
+    visible_equator = coords(rotated).transpose()
+    
+    hemisphere = Polygon(np.degrees(points))
+    visible = Polygon(np.degrees(visible_equator))
+
+    hemisphere_gdf = gpd.GeoDataFrame(geometry=[hemisphere], crs="EPSG:4326")
+    visible_gdf = gpd.GeoDataFrame(geometry=[visible], crs="EPSG:4326")
+
 def save(points, path):
-    polygon = Polygon(np.degrees(points))
-    geojson = {
-        "type": "Feature",
-        "properties": {},
-        "geometry": mapping(polygon)
-    }
-    geojson_string = json.dumps(geojson, indent=4)
-    with open(path, 'w', encoding='utf-8') as file:
-        file.write(geojson_string)
+    #polygon = Polygon(np.degrees(points))
+    #geojson = {
+    #    "type": "Feature",
+    #    "properties": {},
+    #    "geometry": mapping(polygon)
+    #}
+    #geojson_string = json.dumps(geojson, indent=4)
+    #with open(path, 'w', encoding='utf-8') as file:
+    #    file.write(geojson_string)
+    header = np.array(['longitude', 'latitude'])
+    points = np.vstack((header, points.transpose()))
+    with open(path, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerows(points)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("center_longitude", help="longitude of center point, from 0 to 360", type=longitude)
     parser.add_argument("center_latitude", help="latitude of center point, from -90 to 90", type=latitude)
-    parser.add_argument("-plot", help="render calculated points in 3d", action="store_true")
     parser.add_argument("-resolution", help="number of points to calculate", type=int, default=360)
     parser.add_argument("-export", help="file to export to", type=str)
     args = parser.parse_args()
@@ -96,8 +113,7 @@ if __name__ == '__main__':
     center = np.array([args.center_longitude, args.center_latitude])
     rotated = create_great_circle(center, resolution=args.resolution)
     rotated_coords = coords(rotated)
+#    plot(rotated_coords)
 
-    if args.plot:
-        plot_points(ceter, rotated)
     if args.export:
-        save(rotated_coords.transpose(), args.export)
+        save(rotated_coords, args.export)
