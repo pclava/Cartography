@@ -74,11 +74,11 @@ class Rotation:
 
     # This is not exactly local hour angle, but I'm calling it that. It's the longitude of the subsolar point
     # Calculates angle between fixed vectors spanning equatorial plane, and sun vector, subtracting current angle of rotation
-    def local_hour_angle(self, day):
+    def local_hour_angle(self, day, start=0):
         sun = self.sun_vector(day)
         dot = self.pole @ sun
         proj = sun - self.pole[:, None] * dot
         proj_mag = np.linalg.norm(proj, axis=0)
         doty = self.y_0 @ proj
         dotx = self.x_0 @ proj
-        return (np.arctan2(doty, dotx) + np.pi - self.angle_t(day)) % (2 * np.pi)
+        return (np.arctan2(doty, dotx) + np.pi - self.angle_t(day, start=start)) % (2 * np.pi)

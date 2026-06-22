@@ -145,25 +145,26 @@ def plot_rotation_data(rot, time, exaggerate=False, stat="decl"):
     plt.title(title)
     plt.plot(time, np.degrees(data))
 
-def get_subsolar(rot, time, offset=False, exaggerate=False):
+def get_subsolar(rot, time, offset=False, exaggerate=False, start=0):
     if offset:
-        lha = np.degrees(rot.local_hour_angle(time) - np.pi)
+        lha = np.degrees(rot.local_hour_angle(time, start=start) - np.pi)
     else:
-        lha = np.degrees(rot.local_hour_angle(time))
+        lha = np.degrees(rot.local_hour_angle(time, start=start))
     decl = rot.declination(time)
     if exaggerate: decl = stretch(decl)
     return lha, np.degrees(decl)
 
-def map_subsolar_point(rot, time, offset=False, exaggerate=False):
-    lha, decl = get_subsolar(rot, time, offset=offset, exaggerate=exaggerate)
-    fig, ax = plt.subplots(figsize=(10,6), subplot_kw={'projection': ccrs.Orthographic()})
+def map_subsolar_point(rot, time, offset=False, exaggerate=False, start=0):
+    lha, decl = get_subsolar(rot, time, offset=offset, exaggerate=exaggerate, start=start)
+    #fig, ax = plt.subplots(figsize=(10,6), subplot_kw={'projection': ccrs.Orthographic()})
+    fig, ax = plt.subplots(figsize=(10,6), subplot_kw={'projection': ccrs.PlateCarree()})
     ax.scatter(lha, decl,s=0.5, transform=ccrs.PlateCarree())
     ax.set_aspect('equal')
     ax.set_global()
     ax.coastlines()
 
-def export_subsolar(rot, time, offset, path, exaggerate=False):
-    lha, decl = get_subsolar(rot, time, offset=offset, exaggerate=exaggerate)
+def export_subsolar(rot, time, offset, path, exaggerate=False, start=0):
+    lha, decl = get_subsolar(rot, time, offset=offset, exaggerate=exaggerate, start=start)
     points = np.column_stack((lha, decl))
     header = np.array(['longitude', 'latitude'])
     points = np.vstack((header, points))
@@ -182,6 +183,7 @@ if __name__ == "__main__":
     parser.add_argument("-exaggerate", help="exaggerate latitudes for the calculation of subsolar point", action="store_true")
     parser.add_argument("-offset", help="offset longitudes to span -180 to 180, rather than 0 to 360", action="store_true")
     parser.add_argument("-plot_data", help="plot data with respect to time", type=str, nargs='?', const="decl")
+    parser.add_argument("-start", help="initial angle of rotation at t=0, at first perihelion", type=float, default=0)
 
     args = parser.parse_args()
 
@@ -197,10 +199,10 @@ if __name__ == "__main__":
     if args.show_orbit:
         ellipse(obj_orbit)   
     if args.show_subsolar:
-        map_subsolar_point(obj_rot, time, offset=args.offset, exaggerate=args.exaggerate)
+        map_subsolar_point(obj_rot, time, offset=args.offset, exaggerate=args.exaggerate, start=np.radians(args.start))
     if args.plot_data:
         plot_rotation_data(obj_rot, time, exaggerate=args.exaggerate, stat=args.plot_data)
     if args.export_subsolar != None:
-        export_subsolar(obj_rot, time, args.offset, args.export_subsolar, exaggerate=args.exaggerate)
+        export_subsolar(obj_rot, time, args.offset, args.export_subsolar, exaggerate=args.exaggerate, start=args.start)
 
     plt.show()
