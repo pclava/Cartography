@@ -76,14 +76,9 @@ def plot_points(center, points):
 def save(points, path):
     polygon = Polygon(np.degrees(points))
     geojson = {
-        "type": "FeatureCollection",
-        "features": [
-            {
-                "type": "Feature",
-                "properties": {},
-                "geometry": mapping(polygon)
-            }
-        ]
+        "type": "Feature",
+        "properties": {},
+        "geometry": mapping(polygon)
     }
     geojson_string = json.dumps(geojson, indent=4)
     with open(path, 'w', encoding='utf-8') as file:
