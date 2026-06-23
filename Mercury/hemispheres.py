@@ -1,3 +1,7 @@
+"""
+Generates a hemisphere centered on a given coordinate
+"""
+
 import numpy as np
 import cartopy.crs as ccrs
 from shapely.geometry import Polygon, mapping
@@ -71,7 +75,7 @@ def polygon(points, center):
     return Polygon(np.degrees(points.transpose()))
 
 def generate_polygon(center, resolution=1000):
-    points = generate_points(center, resolution=resolution)
+    points = generate_points(np.radians(center), resolution=resolution)
     return Polygon(np.degrees(points))
 
 def plot(points, center):
