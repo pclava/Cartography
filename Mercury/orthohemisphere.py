@@ -28,10 +28,10 @@ def main(planet_radius, viewpoint, hemisphere_center, path):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("viewpoint", type=point, help="Orthographic viewpoint. Provide as comma-separated longitude,latitude")
-    parser.add_argument("hemisphere_center", type=point, help="Center of hemisphere. Provide as comma-separated longitude,latitude")
-    parser.add_argument("export", type=str, help="Output path. Will output as a GeoJSON file")
-    parser.add_argument("-radius", help="Radius of target planet, in meters", type=int, default=2439400)
+    parser.add_argument("--viewpoint", type=point, help="Orthographic viewpoint. Provide as comma-separated longitude,latitude")
+    parser.add_argument("--hemisphere_center", type=point, help="Center of hemisphere. Provide as comma-separated longitude,latitude")
+    parser.add_argument("--export", type=str, help="Output path. Will output as a GeoJSON file")
+    parser.add_argument("--radius", help="Radius of target planet, in meters", type=int, default=2439400)
     args = parser.parse_args()
     
     main(args.radius, args.viewpoint, args.hemisphere_center, args.export)
