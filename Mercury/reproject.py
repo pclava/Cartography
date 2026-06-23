@@ -1,24 +1,45 @@
-import geopandas as gpd
-from shapely.geometry import Point
-import shapely
-import warnings
+from pyproj import CRS, Transformer
 import numpy as np
+from shapely.geometry import Polygon
+from shapely.validation import explain_validity
+import shapely
 
-lat0 = 0
-lon0 = -90
-rad = 2439400
+import hemispheres
 
-path = "test.geojson"
-out = "testprojected.geojson"
-crs=f"+proj=ortho +lat_0={lat0} +lon_0={lon0} +a={rad} +b={rad} +units=m +no_defs"
-aeqd=f"+proj=aeqd +lat_0={lat0} +lon_0={lon0} +a={rad} +b={rad} +units=m +no_defs"
+def transformer(lon0, lat0):
+    ortho = CRS.from_proj4(
+        f"+proj=ortho +lat_0={lat0} +lon_0={lon0} +a=2439400 +b=2439400 +units=m +no_defs")
+    wgs84 = CRS.from_epsg(4326)
+    return Transformer.from_crs(wgs84, ortho, always_xy=True)
+    
+def to_polygon(bounds, viewpoint):
+    lon0=viewpoint[0]
+    lat0=viewpoint[1]
+    transf = transformer(lon0, lat0)
+    
+    # Get latlon coordinates and transform to x,y
+    lons = [pt[0] for pt in bounds]
+    lats = [pt[1] for pt in bounds]
+    xs, ys = transf.transform(lons, lats)
+    
+    # Sanitize coords
+    coords = list(zip(xs,ys))
+    coords = [(x,y) for x,y in coords if np.isfinite(x) and np.isfinite(y)]
+    if coords[0] != coords[-1]: coords.append(coords[0])
+    
+    poly = Polygon(coords)
+    if not poly.is_valid:
+        reason = explain_validity(poly)
+        raise ValueError(f"Invalid polygon {reason}")
+    
+    return poly
 
-center = gpd.GeoSeries([Point(lon0, lat0)], crs="EPSG:4326").to_crs(aeqd)
-radm = (rad * np.pi / 2) * 0.999
-hemisphere = gpd.GeoDataFrame(geometry=center.buffer(radm), crs=aeqd).to_crs("EPSG:4326")
-
-gdf = gpd.read_file(path)
-clipped = gdf.overlay(hemisphere, how='intersection')
-clipped.to_file("clipped.geojson")
-projected = clipped.to_crs(crs)
-projected.to_file("projected.geojson")
+if __name__ == "__main__":
+    center = np.array([0, 0])
+    rotated = hemispheres.create_great_circle(center)
+    rotated_coords = np.degrees(hemispheres.coords(rotated).transpose())
+    
+    polygon = to_polygon(rotated_coords, np.array([-90, 0]))
+    geojson = shapely.to_geojson(polygon, indent=2)
+    with open("test.geojson", 'w', encoding='utf-8') as file:
+        file.write(geojson)

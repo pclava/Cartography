@@ -97,7 +97,7 @@ def save(points, path):
     #with open(path, 'w', encoding='utf-8') as file:
     #    file.write(geojson_string)
     header = np.array(['longitude', 'latitude'])
-    points = np.vstack((header, points.transpose()))
+    points = np.vstack((header, np.degrees(points).transpose()))
     with open(path, 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerows(points)
