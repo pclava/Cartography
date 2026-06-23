@@ -1,5 +1,4 @@
 import numpy as np
-import csv
 import cartopy.crs as ccrs
 from shapely.geometry import Polygon, mapping
 import shapely
@@ -63,44 +62,43 @@ def latitude(x):
     if x < -90 or x > 90: raise argparse.ArgumentTypeError(f"Invalid latitude {x}")
     return np.radians(x)
 
-def plot(points):
-    ortho_proj = ccrs.Orthographic(central_longitude=0, central_latitude=0)
+def generate_points(center, resolution=1000):
+    center = np.array(center)
+    rotated = create_great_circle(center, resolution=resolution)
+    return coords(rotated).transpose()
+
+def polygon(points, center):
+    return Polygon(np.degrees(points.transpose()))
+
+def generate_polygon(center, resolution=1000):
+    points = generate_points(center, resolution=resolution)
+    return Polygon(np.degrees(points))
+
+def plot(points, center):
     fig = plt.figure(figsize=(8, 8))
-    ax = fig.add_subplot(1, 1, 1, projection=ortho_proj)
+    proj = ccrs.Orthographic()
+    proj._threshold /= 100.
+    ax = fig.add_subplot(1, 1, 1, projection=proj)
     ax.coastlines()
     ax.set_global()
     lons, lats = np.degrees(points)
-    ax.scatter(lons, lats, color='red', marker='o', s=100,
-           transform=ccrs.PlateCarree(), zorder=5)
+    poly = polygon(points, center)
+    # IMPORTANT: points MUST be in Geodetic to correctly process and draw the hemisphere
+    # Cartopy will spit out a warning but it is safe to ignore.
+    ax.add_geometries([poly], crs=ccrs.Geodetic(), facecolor = 'b', edgecolor='black', alpha=0.5)
+    ax.scatter(lons, lats, color='red', marker='o', s=1, transform=ccrs.PlateCarree(), zorder=5)
     plt.show()
 
-def clip_to_visible(points, pov, resolution=360):
-    # Note: visible is simply the equator from the pov
-    center = np.array([pov[0], pov[1]])
-    rotated = create_great_circle(center, resolution=resolution)
-    visible_equator = coords(rotated).transpose()
-    
-    hemisphere = Polygon(np.degrees(points))
-    visible = Polygon(np.degrees(visible_equator))
-
-    hemisphere_gdf = gpd.GeoDataFrame(geometry=[hemisphere], crs="EPSG:4326")
-    visible_gdf = gpd.GeoDataFrame(geometry=[visible], crs="EPSG:4326")
-
 def save(points, path):
-    #polygon = Polygon(np.degrees(points))
-    #geojson = {
-    #    "type": "Feature",
-    #    "properties": {},
-    #    "geometry": mapping(polygon)
-    #}
-    #geojson_string = json.dumps(geojson, indent=4)
-    #with open(path, 'w', encoding='utf-8') as file:
-    #    file.write(geojson_string)
-    header = np.array(['longitude', 'latitude'])
-    points = np.vstack((header, np.degrees(points).transpose()))
-    with open(path, 'w', newline='') as csvfile:
-        writer = csv.writer(csvfile)
-        writer.writerows(points)
+    polygon = Polygon(np.degrees(points))
+    geojson = {
+        "type": "Feature",
+        "properties": {},
+        "geometry": mapping(polygon)
+    }
+    geojson_string = json.dumps(geojson, indent=4)
+    with open(path, 'w', encoding='utf-8') as file:
+        file.write(geojson_string)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -108,12 +106,13 @@ if __name__ == '__main__':
     parser.add_argument("center_latitude", help="latitude of center point, from -90 to 90", type=latitude)
     parser.add_argument("-resolution", help="number of points to calculate", type=int, default=360)
     parser.add_argument("-export", help="file to export to", type=str)
+    parser.add_argument("-plot", help="plot some data", action="store_true")
     args = parser.parse_args()
 
     center = np.array([args.center_longitude, args.center_latitude])
-    rotated = create_great_circle(center, resolution=args.resolution)
-    rotated_coords = coords(rotated)
-#    plot(rotated_coords)
+    rotated_coords = generate_points(center, resolution=args.resolution)
 
     if args.export:
-        save(rotated_coords, args.export)
+        save(rotated_coords.transpose(), args.export)
+    if args.plot:
+        plot(rotated_coords.transpose(), center)
