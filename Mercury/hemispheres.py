@@ -117,6 +117,6 @@ if __name__ == '__main__':
     rotated_coords = generate_points(center, resolution=args.resolution)
 
     if args.export:
-        save(rotated_coords.transpose(), args.export)
+        save(rotated_coords, args.export)
     if args.plot:
         plot(rotated_coords.transpose(), center)
