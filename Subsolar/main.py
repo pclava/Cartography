@@ -203,6 +203,6 @@ if __name__ == "__main__":
     if args.plot_data:
         plot_rotation_data(obj_rot, time, exaggerate=args.exaggerate, stat=args.plot_data)
     if args.export_subsolar != None:
-        export_subsolar(obj_rot, time, args.offset, args.export_subsolar, exaggerate=args.exaggerate, start=args.start)
+        export_subsolar(obj_rot, time, args.offset, args.export_subsolar, exaggerate=args.exaggerate, start=np.radians(args.start))
 
     plt.show()
