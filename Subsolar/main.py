@@ -1,11 +1,11 @@
 import numpy as np
 import csv
-from objects import objects
+from Subsolar.objects import objects
 import argparse
 import sys
 import matplotlib.pyplot as plt
 import math
-from rotation import Rotation
+from Subsolar.rotation import Rotation
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from numpy import cos as cos

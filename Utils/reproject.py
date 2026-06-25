@@ -30,3 +30,27 @@ def project_csv(inp, out, crs_proj):
     gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df.longitude, df.latitude), crs="EPSG:4326")
     gdf_reprojected = gdf.to_crs(crs_proj)
     gdf_reprojected.to_file(out, driver="GeoJSON")
+
+def project_geojson(inp, out, crs_proj):
+    """
+    Reprojects a GeoJSON in geodetic coordinates into a given CRS
+    """
+    gdf = gpd.read_file(inp)
+    reprojected = gdf.to_crs(crs_proj)
+    reprojected.to_file(out, driver="GeoJSON")
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("type", help="csv or geojson", type=str)
+    parser.add_argument("source", help="input file", type=str)
+    parser.add_argument("destination", help="destination file", type=str)
+    parser.add_argument("crs", help="target crs", type=str)
+    args = parser.parse_args()
+
+    match type:
+        case "csv":
+            project_csv(args.source, args.destination, args.crs)
+        case "geojson":
+            project_geojson(args.source, args.destination, args.crs)
+        case _:
+            print("Unrecognized type")
