@@ -47,7 +47,7 @@ if __name__ == "__main__":
     parser.add_argument("crs", help="target crs", type=str)
     args = parser.parse_args()
 
-    match type:
+    match args.type:
         case "csv":
             project_csv(args.source, args.destination, args.crs)
         case "geojson":
