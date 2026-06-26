@@ -183,7 +183,7 @@ if __name__ == "__main__":
     parser.add_argument("-exaggerate", help="exaggerate latitudes for the calculation of subsolar point", action="store_true")
     parser.add_argument("-offset", help="offset longitudes to span -180 to 180, rather than 0 to 360", action="store_true")
     parser.add_argument("-plot_data", help="plot data with respect to time", type=str, nargs='?', const="decl")
-    parser.add_argument("-start", help="initial angle of rotation at t=0, at first perihelion", type=float, default=0)
+    parser.add_argument("-start", help="initial angle of rotation at t=0, at first perihelion. NOTE: I have found that in order to render properly in QGIS orthographically, it is best for the offset to be less than -180 or greater than 180.", type=float, default=0)
 
     args = parser.parse_args()
 
